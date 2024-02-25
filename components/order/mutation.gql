@@ -1,0 +1,7 @@
+mutation UpdateOrder($updateOrderInput: UpdateOrderInput!) {
+  updateOrder(updateOrderInput: $updateOrderInput) {
+    data {
+      affected
+    }
+  }
+}
