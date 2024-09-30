@@ -15,10 +15,8 @@
 query OrderDetail($id: Int!) {
   orders_by_pk(id: $id) {
     id
-    total
     createdAt
     status
-    deposit
     orderItems {
       id
       quantity

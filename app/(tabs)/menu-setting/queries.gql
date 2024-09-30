@@ -1,7 +1,6 @@
 query Menus {
   menus(order_by: { isDisplay: desc }, where: { isDeleted: { _eq: false } }) {
     avatar
-    categoryId
     description
     id
     isDeleted
@@ -11,9 +10,3 @@ query Menus {
   }
 }
 
-query MenuCategories {
-  menuCategories {
-    id
-    name
-  }
-}
