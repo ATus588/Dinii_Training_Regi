@@ -11,12 +11,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useLocalSearchParams } from "expo-router";
 
 type Props = {};
 
 const index = (props: Props) => {
   const { data: ordersData } = useOrdersSubscription();
   const [orderId, setOrderId] = useState<number | null>(null);
+  const {tableId} = useLocalSearchParams()
+
 
   if (!ordersData?.orders.length) return <Text>{text.noData}</Text>;
 
@@ -42,7 +45,6 @@ const index = (props: Props) => {
                       }
                     >
                       {text.yen}
-                      {item.total}
                     </Text>
                     <Text className={item.id === orderId ? "text-white" : ""}>
                       {dayjs(item.createdAt).format("MM月DD日 HH:MM")}
