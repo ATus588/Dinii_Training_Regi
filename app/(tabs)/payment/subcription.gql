@@ -1,7 +1,6 @@
 subscription Orders {
   orders(order_by: { status: asc }) {
     id
-    total
     createdAt
     status
   }

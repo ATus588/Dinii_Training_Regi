@@ -51,9 +51,10 @@ const authLink = setContext((_, { headers }) => {
   return {
     headers: {
       ...headers,
-      authorization: token ? `Bearer ${token}` : "",
+      ...(token && {authorization: `Bearer ${token}`}),
     },
   };
+
 });
 
 const splitLink = split(
