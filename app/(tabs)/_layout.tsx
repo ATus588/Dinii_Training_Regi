@@ -36,6 +36,12 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="menu/index"
+        options={{
+          tabBarButton: () => null, // Hides the tab
+        }}
+      />
+      <Tabs.Screen
         name="table/index"
         options={{
           tabBarIcon: ({ color }) => (
