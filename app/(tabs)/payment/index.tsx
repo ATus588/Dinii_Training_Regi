@@ -20,7 +20,14 @@ import {
 type Props = {};
 
 const index = (props: Props) => {
-  const { data: unpaidTablesData } = useGetUnpaidTablesQuery();
+  const {
+    data: unpaidTablesData,
+    loading,
+    refetch,
+  } = useGetUnpaidTablesQuery({
+    fetchPolicy: "no-cache",
+    notifyOnNetworkStatusChange: true,
+  });
   const [getUnpaidOrderItemsByTableId] =
     useGetUnpaidOrderItemsByTableIdLazyQuery();
   const [orderItems, setOrderItems] = useState<
@@ -59,6 +66,8 @@ const index = (props: Props) => {
           <FlatList
             className="p-2"
             data={unpaidTablesData.getUnpaidTables.data}
+            refreshing={loading}
+            onRefresh={refetch}
             renderItem={({ item }) => (
               <TouchableOpacity
                 onPress={() =>
