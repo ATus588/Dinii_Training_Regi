@@ -30,12 +30,18 @@ export default function TabLayout() {
       initialRouteName="payment/index"
     >
       <Tabs.Screen
-        name="menu/index"
+        name="table/[id]/menu/index" // Dynamic tab
+        options={{
+          tabBarButton: () => null,  // Hides the tab
+        }}
+      />
+      <Tabs.Screen
+        name="table/index"
         options={{
           tabBarIcon: ({ color }) => (
-            <MaterialIcons name="food-bank" size={24} color={color} />
+            <MaterialIcons name="table-restaurant" size={24} color={color} />
           ),
-          title: text.menu,
+          title: text.table,
         }}
       />
       <Tabs.Screen
