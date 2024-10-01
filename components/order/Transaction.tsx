@@ -1,83 +1,83 @@
-import {
-  View,
-  Text,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableOpacity,
-} from "react-native";
-import React, { useEffect, useState } from "react";
+import text from "@/constants/text";
 import {
   EOrderStatus,
-  OrderDetailDocument,
-  useOrderDetailQuery,
-  useUpdateOrderMutation,
+  GetTablesDocument,
+  GetUnpaidOrderItemsByTableIdQuery,
+  GetUnpaidTablesDocument,
+  useCreatePaymentMutation,
 } from "@/gql/schema";
-import text from "@/constants/text";
+import React, { useState } from "react";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useToast } from "react-native-toast-notifications";
 
-type Props = {
-  orderId: number;
+type TransactionProps = {
+  orderItems: GetUnpaidOrderItemsByTableIdQuery["orderItems"];
+  tableId: number;
+  setOrderItems: React.Dispatch<
+    React.SetStateAction<GetUnpaidOrderItemsByTableIdQuery["orderItems"]>
+  >;
 };
 
-const Transaction = ({ orderId }: Props) => {
+const Transaction: React.FC<TransactionProps> = ({
+  orderItems,
+  setOrderItems,
+  tableId,
+}) => {
   const [deposit, setDeposit] = useState<number>(0);
   const [depositError, setDepositError] = useState<string>("");
   const toast = useToast();
-  const { data } = useOrderDetailQuery({
-    variables: {
-      id: orderId,
-    },
-  });
 
-  const [updateOrder] = useUpdateOrderMutation();
+  const [createPayment] = useCreatePaymentMutation();
 
   const handleUpdateOrder = async () => {
     if (depositError) return;
-    const { data } = await updateOrder({
+    await createPayment({
       variables: {
-        updateOrderInput: {
-          id: orderId,
-          status: EOrderStatus.Completed,
-          deposit,
+        createPaymentInput: {
+          tableId,
         },
       },
       refetchQueries: [
-        { query: OrderDetailDocument, variables: { id: orderId } },
+        { query: GetUnpaidTablesDocument },
+        { query: GetTablesDocument },
       ],
+      onCompleted: () => {
+        toast.show(text.paymentSuccess, {
+          type: "success",
+          placement: "bottom",
+          duration: 3000,
+          // offset: 30,
+          animationType: "slide-in",
+        });
+        setDeposit(0);
+        setOrderItems([]);
+      },
+      onError: () => {
+        toast.show(text.paymentFailed, {
+          type: "error",
+          placement: "bottom",
+          duration: 3000,
+          // offset: 30,
+          animationType: "slide-in",
+        });
+      },
     });
-    if (data?.updateOrder.data?.affected) {
-      toast.show(text.paymentSuccess, {
-        type: "success",
-        placement: "bottom",
-        duration: 3000,
-        // offset: 30,
-        animationType: "slide-in",
-      });
-      setDeposit(0);
-    } else {
-      toast.show(text.paymentFailed, {
-        type: "error",
-        placement: "bottom",
-        duration: 3000,
-        // offset: 30,
-        animationType: "slide-in",
-      });
-    }
   };
 
-  useEffect(() => {
-    if (data?.orders_by_pk?.deposit) {
-      setDeposit(data.orders_by_pk.deposit);
-    } else {
-      setDeposit(0);
-    }
-    setDepositError("");
-  }, [orderId]);
+  if (!orderItems.length)
+    return <Text className="text-center mt-20 text-base">{text.noData}</Text>;
 
-  if (!data?.orders_by_pk?.orderItems) return <Text>{text.noData}</Text>;
-
-  const subTotal = data.orders_by_pk.total;
+  const subTotal = orderItems.reduce(
+    (acc, item) => acc + item.price * item.quantity,
+    0
+  );
   const tax = subTotal * 0.1;
   const total = subTotal + tax;
 
@@ -112,31 +112,24 @@ const Transaction = ({ orderId }: Props) => {
           <View className="flex-row justify-between items-center">
             <Text>{text.deposit}</Text>
             <View>
-              {data.orders_by_pk.status === EOrderStatus.Pending ? (
-                <TextInput
-                  className={
-                    "h-8 w-24 p-1 text-right border border-solid " +
-                    (depositError ? " border-red-500" : " border-black")
+              <TextInput
+                className={
+                  "h-8 w-24 p-1 text-right border border-solid " +
+                  (depositError ? " border-red-500" : " border-black")
+                }
+                keyboardType="numeric"
+                onChangeText={(textInput) => {
+                  let deposit = Number(textInput.replace(/[^0-9]/g, ""));
+                  if (deposit > 10000000) deposit = 9999999;
+                  setDeposit(deposit);
+                  if (deposit < total) {
+                    setDepositError(text.depositError);
+                  } else {
+                    setDepositError("");
                   }
-                  keyboardType="numeric"
-                  onChangeText={(textInput) => {
-                    let deposit = Number(textInput.replace(/[^0-9]/g, ""));
-                    if (deposit > 10000000) deposit = 9999999;
-                    setDeposit(deposit);
-                    if (deposit < total) {
-                      setDepositError(text.depositError);
-                    } else {
-                      setDepositError("");
-                    }
-                  }}
-                  value={deposit ? deposit.toString() : ""}
-                />
-              ) : (
-                <Text>
-                  {text.yen}
-                  {data.orders_by_pk.deposit}
-                </Text>
-              )}
+                }}
+                value={deposit ? deposit.toString() : ""}
+              />
             </View>
           </View>
           {depositError && (
@@ -148,22 +141,16 @@ const Transaction = ({ orderId }: Props) => {
         <View className="flex-row justify-between">
           <Text>{text.change}</Text>
           <Text>
-            {data.orders_by_pk.deposit
-              ? data.orders_by_pk.deposit - total
-              : deposit - total > 0
-              ? `${text.yen} ${deposit - total}`
-              : ""}
+            {deposit - total > 0 ? `${text.yen} ${deposit - total}` : ""}
           </Text>
         </View>
 
-        {data.orders_by_pk.status === EOrderStatus.Pending && (
-          <TouchableOpacity
-            className="bg-primary p-4 items-center rounded-lg"
-            onPress={handleUpdateOrder}
-          >
-            <Text className="text-white">{text.payment}</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          className="bg-primary p-4 items-center rounded-lg"
+          onPress={handleUpdateOrder}
+        >
+          <Text className="text-white">{text.payment}</Text>
+        </TouchableOpacity>
       </KeyboardAvoidingView>
     </View>
   );

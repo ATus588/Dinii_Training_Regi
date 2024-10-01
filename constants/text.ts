@@ -21,6 +21,7 @@ const text = {
   payment: "会計",
   selectOrderMessage: "注文を選択してください",
   noData: "データがありません",
+  noUnPaidTable: "未払いのテーブルがありません",
   subTotal: "小計",
   tax: "税",
   total: "合計",

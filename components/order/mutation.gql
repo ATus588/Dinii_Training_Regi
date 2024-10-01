@@ -1,7 +1,8 @@
-mutation UpdateOrder($updateOrderInput: UpdateOrderInput!) {
-  updateOrder(updateOrderInput: $updateOrderInput) {
-    data {
-      affected
-    }
+mutation CreatePayment($createPaymentInput: CreatePaymentInput = {tableId: 10}) {
+  createPayment(createPaymentInput: $createPaymentInput) {
+    timestamp
+    statusCode
+    errorMessage
+    errorCode
   }
 }

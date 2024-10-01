@@ -1,24 +1,20 @@
 import text from "@/constants/text";
-import { useOrderDetailQuery } from "@/gql/schema";
+import { GetUnpaidOrderItemsByTableIdQuery } from "@/gql/schema";
 import { FlatList, Image, Text, View } from "react-native";
 
-type Props = {
-  orderId: number;
+type OrderDetailProps = {
+  orderItems: GetUnpaidOrderItemsByTableIdQuery["orderItems"];
 };
 
-const OrderDetail = ({ orderId }: Props) => {
-  const { data } = useOrderDetailQuery({
-    variables: {
-      id: orderId,
-    },
-  });
-  if (!data?.orders_by_pk?.orderItems) return <Text>{text.noData}</Text>;
+const OrderDetail: React.FC<OrderDetailProps> = ({ orderItems }) => {
+  if (!orderItems.length)
+    return <Text className="text-center mt-20 text-base">{text.noData}</Text>;
 
   return (
     <View>
       <FlatList
         className="p-2"
-        data={data.orders_by_pk.orderItems}
+        data={orderItems}
         renderItem={({ item }) => (
           <View>
             <View className="flex-row justify-between px-4 items-center">
@@ -30,7 +26,7 @@ const OrderDetail = ({ orderId }: Props) => {
                 />
                 <View className="mx-2">
                   <Text className="max-w-[260px] mb-1">{item.menu.name}</Text>
-                  <Text>{item.menu.price}</Text>
+                  <Text>{item.price}</Text>
                 </View>
               </View>
               <View className="flex-1">
@@ -39,7 +35,7 @@ const OrderDetail = ({ orderId }: Props) => {
               <View className="flex-1">
                 <Text>
                   {text.yen}
-                  {item.quantity * item.menu.price}
+                  {item.quantity * item.price}
                 </Text>
               </View>
               <View className="border-[0.5px] border-slate-300 my-2" />

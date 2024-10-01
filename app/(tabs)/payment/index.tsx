@@ -1,8 +1,13 @@
 import OrderDetail from "@/components/order/OrderDetail";
 import Transaction from "@/components/order/Transaction";
 import text from "@/constants/text";
-import { EOrderStatus, useOrdersSubscription } from "@/gql/schema";
+import {
+  GetUnpaidOrderItemsByTableIdQuery,
+  useGetUnpaidOrderItemsByTableIdLazyQuery,
+  useGetUnpaidTablesQuery,
+} from "@/gql/schema";
 import dayjs from "dayjs";
+import { useGlobalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   FlatList,
@@ -11,17 +16,41 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
 
 type Props = {};
 
 const index = (props: Props) => {
-  const { data: ordersData } = useOrdersSubscription();
-  const [orderId, setOrderId] = useState<number | null>(null);
-  const {tableId} = useLocalSearchParams()
+  const { data: unpaidTablesData } = useGetUnpaidTablesQuery();
+  const [getUnpaidOrderItemsByTableId] =
+    useGetUnpaidOrderItemsByTableIdLazyQuery();
+  const [orderItems, setOrderItems] = useState<
+    GetUnpaidOrderItemsByTableIdQuery["orderItems"]
+  >([]);
+  const { tableId } = useGlobalSearchParams();
+  const router = useRouter();
 
+  useEffect(() => {
+    const getOrderedItems = async () => {
+      if (!Array.isArray(tableId)) {
+        await getUnpaidOrderItemsByTableId({
+          variables: {
+            tableId: parseInt(tableId),
+          },
+          onCompleted: (data) => {
+            setOrderItems(data.orderItems);
+          },
+        });
+      }
+    };
 
-  if (!ordersData?.orders.length) return <Text>{text.noData}</Text>;
+    getOrderedItems();
+  }, [tableId]);
+
+  if (!unpaidTablesData?.getUnpaidTables.data.length) {
+    return (
+      <Text className="text-center mt-20 text-lg">{text.noUnPaidTable}</Text>
+    );
+  }
 
   return (
     <SafeAreaView>
@@ -29,35 +58,56 @@ const index = (props: Props) => {
         <View className="flex-1 bg-white h-full rounded-xl">
           <FlatList
             className="p-2"
-            data={ordersData.orders}
+            data={unpaidTablesData.getUnpaidTables.data}
             renderItem={({ item }) => (
-              <TouchableOpacity onPress={() => setOrderId(item.id)}>
+              <TouchableOpacity
+                onPress={() =>
+                  router.replace({
+                    pathname: "/payment/",
+                    params: { tableId: item.id },
+                  })
+                }
+              >
                 <View
                   className={
                     "flex-row h-14 justify-between items-center rounded-lg overflow-hidden " +
-                    (item.id === orderId ? "bg-primary" : "")
+                    (!Array.isArray(tableId) && item.id === parseInt(tableId)
+                      ? "bg-primary"
+                      : "")
                   }
                 >
                   <View className="p-2">
                     <Text
                       className={
-                        "mb-2 " + (item.id === orderId ? "text-white" : "")
+                        "mb-2 " +
+                        (!Array.isArray(tableId) &&
+                        item.id === parseInt(tableId)
+                          ? "text-white"
+                          : "")
                       }
                     >
-                      {text.yen}
+                      {item.name}
                     </Text>
-                    <Text className={item.id === orderId ? "text-white" : ""}>
-                      {dayjs(item.createdAt).format("MM月DD日 HH:MM")}
+                    <Text
+                      className={
+                        !Array.isArray(tableId) && item.id === parseInt(tableId)
+                          ? "text-white"
+                          : ""
+                      }
+                    >
+                      {dayjs(item.openAt).format("MM月DD日 HH:MM")}
                     </Text>
                   </View>
                   <Text
                     className={
-                      "px-2 " + (item.id === orderId ? "text-white" : "")
+                      "px-2 " +
+                      (!Array.isArray(tableId) && item.id === parseInt(tableId)
+                        ? "text-white"
+                        : "")
                     }
                   >
-                    {item.status === EOrderStatus.Pending
-                      ? text.unpaid
-                      : text.paid}
+                    {text.yen}
+                    {item.total}
                   </Text>
                 </View>
                 <View className="border-[0.5px] border-slate-300 my-2" />
@@ -67,8 +117,8 @@ const index = (props: Props) => {
           />
         </View>
         <View className="flex-[2] bg-white h-full rounded-xl">
-          {orderId ? (
-            <OrderDetail orderId={orderId} />
+          {tableId ? (
+            <OrderDetail orderItems={orderItems} />
           ) : (
             <View className="justify-center h-full">
               <Text className="text-center mt-4">
@@ -78,8 +128,12 @@ const index = (props: Props) => {
           )}
         </View>
         <View className="flex-1 bg-white h-full rounded-xl">
-          {orderId ? (
-            <Transaction orderId={orderId} />
+          {tableId && !Array.isArray(tableId) ? (
+            <Transaction
+              orderItems={orderItems}
+              setOrderItems={setOrderItems}
+              tableId={parseInt(tableId)}
+            />
           ) : (
             <View className="justify-center h-full">
               <Text className="text-center mt-4">
