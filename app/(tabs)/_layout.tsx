@@ -32,7 +32,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="table/[id]/menu/index" // Dynamic tab
         options={{
-          tabBarButton: () => null,  // Hides the tab
+          tabBarButton: () => null, // Hides the tab
         }}
       />
       <Tabs.Screen

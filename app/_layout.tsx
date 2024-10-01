@@ -51,10 +51,9 @@ const authLink = setContext((_, { headers }) => {
   return {
     headers: {
       ...headers,
-      ...(token && {authorization: `Bearer ${token}`}),
+      ...(token && { authorization: `Bearer ${token}` }),
     },
   };
-
 });
 
 const splitLink = split(
@@ -147,7 +146,10 @@ function RootLayoutNav() {
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack>
         {/* <Stack.Screen name="index" options={{ headerShown: true }} /> */}
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="(tabs)"
+          options={{ headerShown: false, animation: "none" }}
+        />
         <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
         <Stack.Screen
           name="create-menu"
